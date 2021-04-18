@@ -51,7 +51,7 @@ class Beamsearch(object):
         """Get the output of the beam at the current timestep.
         """
         current_state = (self.next_nodes[-1].unsqueeze(2)
-                         .expand(self.batch_size, self.beam_size, self.num_nodes))
+                         .expand(self.batch_size, self.beam_size, self.num_nodes)).to(torch.int64)
         return current_state
 
     def get_current_origin(self):
@@ -86,14 +86,14 @@ class Beamsearch(object):
         # Update scores
         self.scores = bestScores
         # Update backpointers
-        prev_k = bestScoresId / self.num_nodes
+        prev_k = bestScoresId // self.num_nodes
         self.prev_Ks.append(prev_k)
         # Update outputs
         new_nodes = bestScoresId - prev_k * self.num_nodes
         self.next_nodes.append(new_nodes)
         # Re-index mask
         perm_mask = prev_k.unsqueeze(2).expand_as(self.mask)  # (batch_size, beam_size, num_nodes)
-        self.mask = self.mask.gather(1, perm_mask)
+        self.mask = self.mask.gather(1, perm_mask.to(torch.int64))
         # Mask newly added nodes
         self.update_mask(new_nodes)
 
@@ -126,6 +126,7 @@ class Beamsearch(object):
         Args:
             k: Position in the beam to construct (usually 0s for most probable hypothesis)
         """
+        k = k.to(torch.int64)
         assert self.num_nodes == len(self.prev_Ks) + 1
 
         hyp = -1 * torch.ones(self.batch_size, self.num_nodes).type(self.dtypeLong)
