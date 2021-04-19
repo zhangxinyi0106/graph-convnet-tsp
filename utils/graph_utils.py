@@ -64,11 +64,8 @@ def mean_tour_len_edges(x_edges_values, y_pred_edges):
     y = F.softmax(y_pred_edges, dim=3)  # B x V x V x voc_edges
     y = y.argmax(dim=3)  # B x V x V
     # Divide by 2 because edges_values is symmetric
-    tour_lens = (y.float() * x_edges_values.float()).sum(dim=1).sum(dim=1) / 2
-    old = tour_lens.sum().to(dtype=torch.float).item() / tour_lens.numel()
     tour_lens = torch.div((y.double() * x_edges_values.double()).sum(dim=1, dtype=torch.double).sum(dim=1, dtype=torch.double), 2)
     mean_tour_len = torch.div(tour_lens.sum(dtype=torch.double), tour_lens.numel()).item()
-    print(f"old tour len {old:.5f} new tour len {mean_tour_len:.5f}")
     return mean_tour_len
 
 
