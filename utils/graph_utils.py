@@ -65,8 +65,34 @@ def mean_tour_len_edges(x_edges_values, y_pred_edges):
     y = y.argmax(dim=3)  # B x V x V
     # Divide by 2 because edges_values is symmetric
     tour_lens = (y.float() * x_edges_values.float()).sum(dim=1).sum(dim=1) / 2
-    mean_tour_len = tour_lens.sum().to(dtype=torch.float).item() / tour_lens.numel()
+    old = tour_lens.sum().to(dtype=torch.float).item() / tour_lens.numel()
+    tour_lens = torch.div((y.double() * x_edges_values.double()).sum(dim=1, dtype=torch.double).sum(dim=1, dtype=torch.double), 2)
+    mean_tour_len = torch.div(tour_lens.sum(dtype=torch.double), tour_lens.numel()).item()
+    print(f"old tour len {old:.5f} new tour len {mean_tour_len:.5f}")
     return mean_tour_len
+
+
+def sum_tour_len_nodes(x_edges_values, bs_nodes):
+    """
+    Computes sum tour length for given batch prediction as node ordering after beamsearch (for Pytorch tensors).
+
+    Args:
+        x_edges_values: Edge values (distance) matrix (batch_size, num_nodes, num_nodes)
+        bs_nodes: Node orderings (batch_size, num_nodes)
+
+    Returns:
+        sum_tour_len: sum tour length over batch
+    """
+    y = bs_nodes.cpu().numpy()
+    W_val = x_edges_values.cpu().numpy()
+    running_tour_len = 0
+    for batch_idx in range(y.shape[0]):
+        for y_idx in range(y[batch_idx].shape[0] - 1):
+            i = y[batch_idx][y_idx]
+            j = y[batch_idx][y_idx + 1]
+            running_tour_len += W_val[batch_idx][i][j]
+        running_tour_len += W_val[batch_idx][j][y[batch_idx][0]]  # Add final connection to tour/cycle
+    return running_tour_len
 
 
 def mean_tour_len_nodes(x_edges_values, bs_nodes):
@@ -88,7 +114,7 @@ def mean_tour_len_nodes(x_edges_values, bs_nodes):
             i = y[batch_idx][y_idx]
             j = y[batch_idx][y_idx + 1]
             running_tour_len += W_val[batch_idx][i][j]
-        running_tour_len += W_val[batch_idx][j][0]  # Add final connection to tour/cycle
+        running_tour_len += W_val[batch_idx][j][y[batch_idx][0]]  # Add final connection to tour/cycle
     return running_tour_len / y.shape[0]
 
 
