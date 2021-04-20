@@ -87,5 +87,16 @@ keep an eye on the printed log to verify that you are running the right experime
 ## Other Notes
 GPUs are strongly recommended to be used. It may take days for TSP100 model to converge even on multiple NVIDIA 2080Ti. You are recommended to
 try out TSP10 before proceed to large datasets, in case of unexpected errors.
+You may change the batch size in configuration files or in codes to prevent the cuda-out-of-memory issue:
+```
+"bastch_size": 20
+```
+```
+# The last cell of evaluate.ipynb and main.ipynb
+if notebook_mode==True:
+    ...
+    config.batch_size = 200
+```
 
-`torch==1.7.1` were tested by us on Ubuntu 16.04. For Windows10 platform, we follow the official dependencies. `environment.yml` is generated via Windows10 platform.
+`torch==1.7.1` was tested by us on Ubuntu 16.04. For Windows10 platform, we follow the official dependencies. `environment.yml` is generated via Windows10 platform.
+This repository is not tested on MacOS.
